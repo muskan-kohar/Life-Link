@@ -15,7 +15,7 @@ typedef enum{
     AB_POS
 }BloodGroup;
 void initialise_Graph(Graph* g);
-void get_Compatible_Groups(Graph* g, BloodGroup patient, BloodGroup compatible, int *count);
+void get_Compatible_Groups(Graph* g, BloodGroup patient, BloodGroup compatible[], int *count);
 
 
 
