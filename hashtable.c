@@ -12,7 +12,7 @@
 Node *hash_table[TABLE_SIZE];
 
 //function to create a node
-Node* create(donors *donor){
+Node* create(Donor *donor){
     Node* newnode = malloc(sizeof(Node));
     newnode->donor = *donor;
     newnode->next = NULL;
@@ -49,22 +49,22 @@ void initialize_hash(){
     return;
 }
 
-void insert_donor(donors *donor){
+void insert_donor(Donor *donor){
     printf("Enter the name of donor:\n");
     scanf("%s", donor->name);
     printf("Enter the blood group of donor:\n");
-    scanf("%s", donor->bloodgrp);
+    scanf("%s", donor->blood_group);
     printf("Enter the location of the person:\n");
     scanf("%s", donor->location);
     printf("Enter the distance of the person from the center:\n");
     scanf("%d", &donor->distance);
     printf("Enter the contact number of the donor:\n");
     scanf("%s", donor->contact);
-    strcpy(donor->last_donation, "00:00:0000");
+    strcpy(donor->last_donation_date, "00-00-0000");
 
 
     char new[50];
-    strcpy(new, donor->bloodgrp);
+    strcpy(new, donor->blood_group);
     strcat(new, "|");
     strcat(new, donor->location);
     //now generate hash based on blood group and location
@@ -99,9 +99,9 @@ void display(){
             while(temp != NULL){
                 printf("%s | %s | %s | %s | %s | %d -> ",
                 temp->donor.name,
-                temp->donor.bloodgrp,
+                temp->donor.blood_group,
                 temp->donor.location,
-                temp->donor.last_donation,
+                temp->donor.last_donation_date,
                 temp->donor.contact,
                 temp->donor.distance);
 
