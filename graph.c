@@ -87,17 +87,17 @@ char* bloodGroupName(BloodGroup group){
 
     return "Invalid";
 }
-int main(){
-    Graph g;
+// int main(){
+//     Graph g;
 
-    initialise_Graph(&g);
+//     initialise_Graph(&g);
 
-    printf("Enter the blood groups you want to find the compatible groups for: \n");
-    printf("0 -> O-\n1 -> O+\n2 -> A-\n3 -> A+\n4 -> B-\n5 -> B+\n6 -> AB-\n7 -> AB+\n");
-    BloodGroup patient;
-    scanf("%d", patient);
-    BloodGroup compatible[8];
-    int count;
-    get_Compatible_Groups(&g, patient, compatible, &count);
+//     printf("Enter the blood groups you want to find the compatible groups for: \n");
+//     printf("0 -> O-\n1 -> O+\n2 -> A-\n3 -> A+\n4 -> B-\n5 -> B+\n6 -> AB-\n7 -> AB+\n");
+//     BloodGroup patient;
+//     scanf("%d", patient);
+//     BloodGroup compatible[8];
+//     int count;
+//     get_Compatible_Groups(&g, patient, compatible, &count);
 
-}
+// }
