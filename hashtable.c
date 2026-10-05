@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include "graph.h"
 #include "hashtable.h"
 
 
@@ -12,32 +13,12 @@
 Node *hash_table[TABLE_SIZE];
 
 //function to create a node
-Node* create(Donor *donor){
+Node* create(Donors *donor){
     Node* newnode = malloc(sizeof(Node));
     newnode->donor = *donor;
     newnode->next = NULL;
 
     return newnode;
-}
-
-/*
-    Now we need a function to create the keys for hash table
-
-    The keys will be created by hashing the input
-
-*/
-
-unsigned long hash_fun(char *key){
-
-    //we use 5321 because it is standerd for djb2 hashing
-    unsigned long hash = 5321;
-
-    while(*key){
-        hash = hash*33 + *key;
-        key++;
-    }
-
-    return hash % TABLE_SIZE;
 }
 
 //intializing the hastables to NULL
@@ -49,7 +30,7 @@ void initialize_hash(){
     return;
 }
 
-void insert_donor(Donor *donor){
+void insert_donor(Donors *donor){
     printf("Enter the name of donor:\n");
     scanf("%s", donor->name);
     printf("Enter the blood group of donor:\n");
@@ -62,13 +43,12 @@ void insert_donor(Donor *donor){
     scanf("%s", donor->contact);
     strcpy(donor->last_donation_date, "00-00-0000");
 
-
-    char new[50];
-    strcpy(new, donor->blood_group);
-    strcat(new, "|");
-    strcat(new, donor->location);
-    //now generate hash based on blood group and location
-    int key = hash_fun(new);
+    //now generate hash based on blood group
+    BloodGroup key = convert_To_enum(donor->blood_group);
+    if(key == -1){
+        printf("Invalid blood group\n");
+        return;
+    }
 
     if(hash_table[key] == NULL){
         //creating a newnode 
@@ -115,4 +95,28 @@ void display(){
 
 }
 
-//search donor
+
+//search donor by their blood group
+Node* search_donor(Node* hash_table, BloodGroup key){
+    //initially making it a 0 sized 
+    int length = 0;
+    Node* the_bloodgroup = malloc(length*sizeof(Node));
+
+    //we now go to the index key and take all the dnors one by one and fill in the array 
+    //untill we reaches null
+
+    Node* curr = hash_table[key];
+    int i = 0;
+
+    while(curr != NULL){
+        
+        //so we have one more donor so we resize the array by using realloc
+        Node* the_bloodgroup = realloc(the_bloodgroup, (length + 1)*sizeof(Node));
+        the_bloodgroup[i] = curr;
+        i++;
+        curr = curr->next;
+    }
+
+    return the_bloodgroup;
+
+}

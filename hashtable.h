@@ -1,9 +1,13 @@
 #ifndef HASHTABLE_H
 #define HASHTABLE_H
+<<<<<<< HEAD
 
 #include"donor.h"
 
 #define TABLE_SIZE 100
+=======
+#define TABLE_SIZE 8
+>>>>>>> 0fdc27a (Changed hashtable and created search function)
 
 
 /*
@@ -29,6 +33,6 @@ unsigned long hash_fun(char *key);
 void initialize_hash();
 void insert_donor(Donor *donor);
 void display();
-void search_donor();
+void search_donor(Node* hash_table, BloodGroup key);
 
 #endif
