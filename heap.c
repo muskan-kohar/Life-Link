@@ -31,7 +31,7 @@ MinHeap* siftup(MinHeap* heap){
         return heap;
     for(int i=1;i<heap->size;i++){
         while((heap->data[(i-1)/2]).distance > (heap->data[i].distance)){
-            Donor temp = heap->data[(i-1)/2];
+            Donors temp = heap->data[(i-1)/2];
             heap->data[(i-1)/2] = heap->data[i];
             heap->data[i] = temp;
             i = (i-1)/2;
@@ -42,7 +42,7 @@ MinHeap* siftup(MinHeap* heap){
 
 // Inserting a donor in the heap. Returns 0 on success, -1 if allocation fails.
 
-int heap_insert(MinHeap *heap, Donor d){
+int heap_insert(MinHeap *heap, Donors d){
     
     if(heap->capacity==0)
         heap->capacity = 1;
@@ -50,7 +50,7 @@ int heap_insert(MinHeap *heap, Donor d){
     if(heap->size == heap->capacity){
         heap->capacity*=2;
         
-        Donor* temp = realloc(heap->data,heap->capacity * sizeof(Donor));
+        Donors* temp = realloc(heap->data,heap->capacity * sizeof(Donors));
 
         if(temp == NULL)
             return -1;
@@ -76,14 +76,14 @@ MinHeap* heapify(MinHeap* heap){
     for(int i=0;i<heap->size && (2*i+2 <= (heap->size)-1);i++){
         while((heap->data[2*i + 1]).distance < (heap->data[i].distance) || (heap->data[2*i + 2]).distance < (heap->data[i].distance) ){
             if((heap->data[2*i + 1]).distance < ((heap->data[2*i+2]).distance)){
-                Donor temp = heap->data[2*i + 1];
+                Donors temp = heap->data[2*i + 1];
                 heap->data[2*i + 1] = heap->data[i];
                 heap->data[i] = temp;
                 i = 2*i + 1;
             }
 
             else{
-                Donor temp = heap->data[2*i + 2];
+                Donors temp = heap->data[2*i + 2];
                 heap->data[2*i + 2]= heap->data[i];
                 heap->data[i] = temp;
                 i = 2*i + 2;
@@ -95,13 +95,13 @@ MinHeap* heapify(MinHeap* heap){
 
 // Here we extract the donor which is at the top of the heap and heapify the remaining heap. 
 
-Donor heap_extract_min(MinHeap *heap){
+Donors heap_extract_min(MinHeap *heap){
     if(heap == NULL || heap->size == 0){
-        Donor empty = {0};
+        Donors empty = {0};
         return empty;
     }
 
-    Donor d = heap->data[0];
+    Donors d = heap->data[0];
     heap->data[0] = heap->data[(heap->size)-1];
     heap->size--;
     heap = heapify(heap);
@@ -110,7 +110,7 @@ Donor heap_extract_min(MinHeap *heap){
 
 // This function is used to find the no of days from last donation time of a donor.
 
-int no_of_days(Donor d){
+int no_of_days(Donors d){
     int day = 0;
     int month =0;
     int year = 0;
@@ -142,18 +142,18 @@ int no_of_days(Donor d){
    In every case the heap holds the same donors afterwards: everything popped during the search is reinserted.
 */
 
-int heap_getmin_active(MinHeap *heap, Donor *result){
+int heap_getmin_active(MinHeap *heap, Donors *result){
    if (heap == NULL || result == NULL || heap->size == 0)
         return 0;
 
     int count = 0;
-    Donor *temp = malloc(heap->size * sizeof(Donor));
+    Donors *temp = malloc(heap->size * sizeof(Donors));
 
     if (temp == NULL)
         return -1;
 
     while (heap->size > 0) {
-        Donor d = heap_extract_min(heap);
+        Donors d = heap_extract_min(heap);
         temp[count++] = d;
 
         if (no_of_days(d) >= 90) {

@@ -8,6 +8,6 @@ typedef struct {
     int distance;
     char last_donation_date[11];   // "DD-MM-YYYY" + null terminator = 11 chars
     char contact[15];
-} Donor;
+} Donors;
 
 #endif

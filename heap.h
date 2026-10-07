@@ -4,7 +4,7 @@
 #include "donor.h"
 
 typedef struct {
-    Donor *data;     
+    Donors *data;     
     int size;        
     int capacity; 
 } MinHeap;
@@ -28,14 +28,14 @@ void heap_free(MinHeap *heap);
   Returns 0 on success, -1 if allocation fails.
 */
 
-int heap_insert(MinHeap *heap, Donor d);
+int heap_insert(MinHeap *heap, Donors d);
 
 /*
    Removes and returns the donor with the smallest distance.
    The caller must make sure the heap is not empty (heap->size > 0).
 */
 
-Donor heap_extract_min(MinHeap *heap);
+Donors heap_extract_min(MinHeap *heap);
 
 /*
    Finds the nearest ACTIVE donor.
@@ -45,6 +45,6 @@ Donor heap_extract_min(MinHeap *heap);
    In every case the heap holds the same donors afterwards: everything popped during the search is reinserted.
 */
 
-int heap_getmin_active(MinHeap *heap, Donor *result);
+int heap_getmin_active(MinHeap *heap, Donors *result);
 
 #endif

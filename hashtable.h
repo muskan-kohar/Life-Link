@@ -1,13 +1,9 @@
 #ifndef HASHTABLE_H
 #define HASHTABLE_H
-<<<<<<< HEAD
 
 #include"donor.h"
 
 #define TABLE_SIZE 100
-=======
-#define TABLE_SIZE 8
->>>>>>> 0fdc27a (Changed hashtable and created search function)
 
 
 /*
@@ -21,18 +17,18 @@
 //creating the linked list structure
 
 typedef struct Node{
-    Donor donor;
+    Donors donor;
     struct Node* next;
 }Node;
 
 extern Node *hash_table[TABLE_SIZE];
 
 //declaring functions
-Node* create(Donor* donor);
+Node* create(Donors* donor);
 unsigned long hash_fun(char *key);
 void initialize_hash();
-void insert_donor(Donor *donor);
+void insert_donor(Donors *donor);
 void display();
-void search_donor(Node* hash_table, BloodGroup key);
+Node* search_donor(Node* hash_table, BloodGroup key);
 
 #endif
