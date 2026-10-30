@@ -38,6 +38,23 @@ void initialize_hash(void){
 void insert_donor(Donors *donor){
     if (donor == NULL) {
         fprintf(stderr, "Cannot insert a null donor.\n");
+    printf("Enter the name of donor:\n");
+    scanf("%49s", donor->name);
+    printf("Enter the blood group of donor:\n");
+    scanf("%4s", donor->blood_group);
+    printf("Enter the location of the person:\n");
+    scanf("%49s", donor->location);
+    printf("Enter the distance of the person from the center:\n");
+    scanf("%d", &donor->distance);
+    printf("Enter the contact number of the donor:\n");
+    scanf("%14s", donor->contact);
+    printf("Enter the last donation date in 'DD-MM-YYYY' format:\n");
+    scanf("%14s", donor->last_donation_date);
+
+    //now generate hash based on blood group
+    BloodGroup key = convert_To_enum(donor->blood_group);
+    if((int)key == -1){
+        printf("Invalid blood group\n");
         return;
     }
 
@@ -117,10 +134,12 @@ void display(void){
     }
 }
 
-/* Return the linked-list head for a valid blood group, or NULL if invalid. */
-Node *search_donor(BloodGroup key){
-    if (key < O_NEG || key > AB_POS)
-        return NULL;
 
-    return hash_table[key];
+//search donor by their blood group
+Node* search_donor(Node** table, BloodGroup key){
+    if(table == NULL || key < O_NEG || key > AB_POS){
+        return NULL;
+    }
+
+    return table[key];
 }
