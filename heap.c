@@ -5,12 +5,7 @@
 #include "heap.h"
 
 static int heap_is_valid(const MinHeap *heap){
-    return heap != NULL &&
-           heap->size >= 0 &&
-           heap->capacity >= 0 &&
-           heap->size <= heap->capacity &&
-           ((heap->capacity == 0 && heap->data == NULL) ||
-            (heap->capacity > 0 && heap->data != NULL));
+    return heap != NULL && heap->size >= 0 && heap->capacity >= 0 && heap->size <= heap->capacity && ((heap->capacity == 0 && heap->data == NULL) || (heap->capacity > 0 && heap->data != NULL));
 }
 
 /* Reset the heap without allocating memory. */
@@ -74,7 +69,7 @@ int heap_insert(MinHeap *heap, Donors d){
 
 /* Restore min-heap order after the root has been replaced by the last item. */
 static void sift_down(MinHeap *heap, int index){
-    for (;;) {
+    while(1){
         if (index >= heap->size / 2)
             break;
 
@@ -82,11 +77,9 @@ static void sift_down(MinHeap *heap, int index){
         int right = left + 1;
         int smallest = index;
 
-        if (left < heap->size &&
-            heap->data[left].distance < heap->data[smallest].distance)
+        if (left < heap->size && heap->data[left].distance < heap->data[smallest].distance)
             smallest = left;
-        if (right < heap->size &&
-            heap->data[right].distance < heap->data[smallest].distance)
+        if (right < heap->size && heap->data[right].distance < heap->data[smallest].distance)
             smallest = right;
         if (smallest == index)
             break;
@@ -120,18 +113,14 @@ static int days_from_civil(int year, unsigned month, unsigned day){
     unsigned year_of_era = (unsigned)(year - era * 400);
     unsigned adjusted_month = month > 2 ? month - 3 : month + 9;
     unsigned day_of_year = (153 * adjusted_month + 2) / 5 + day - 1;
-    unsigned day_of_era = year_of_era * 365 + year_of_era / 4 -
-                          year_of_era / 100 + day_of_year;
+    unsigned day_of_era = year_of_era * 365 + year_of_era / 4 - year_of_era / 100 + day_of_year;
     return era * 146097 + (int)day_of_era;
 }
 
 /* Return elapsed calendar days, INT_MAX for an unset date, or -1 if invalid. */
 static int donation_days_ago(const Donors *donor){
     const char *date = donor->last_donation_date;
-    if (date[0] == '0' && date[1] == '0' && date[2] == '-' &&
-        date[3] == '0' && date[4] == '0' && date[5] == '-' &&
-        date[6] == '0' && date[7] == '0' && date[8] == '0' &&
-        date[9] == '0' && date[10] == '\0')
+    if (date[0] == '0' && date[1] == '0' && date[2] == '-' && date[3] == '0' && date[4] == '0' && date[5] == '-' && date[6] == '0' && date[7] == '0' && date[8] == '0' && date[9] == '0' && date[10] == '\0')
         return INT_MAX;
 
     if (date[2] != '-' || date[5] != '-' || date[10] != '\0')
@@ -144,13 +133,11 @@ static int donation_days_ago(const Donors *donor){
 
     int day = (date[0] - '0') * 10 + date[1] - '0';
     int month = (date[3] - '0') * 10 + date[4] - '0';
-    int year = (date[6] - '0') * 1000 + (date[7] - '0') * 100 +
-               (date[8] - '0') * 10 + date[9] - '0';
+    int year = (date[6] - '0') * 1000 + (date[7] - '0') * 100 + (date[8] - '0') * 10 + date[9] - '0';
     if (year < 1 || month < 1 || month > 12)
         return -1;
 
-    static const int days_in_month[] = {31, 28, 31, 30, 31, 30,
-                                         31, 31, 30, 31, 30, 31};
+    static const int days_in_month[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
     int month_length = days_in_month[month - 1];
     if (month == 2 && (year % 400 == 0 || (year % 4 == 0 && year % 100 != 0)))
         month_length++;
@@ -162,9 +149,7 @@ static int donation_days_ago(const Donors *donor){
     if (current == NULL)
         return -1;
 
-    int today = days_from_civil(current->tm_year + 1900,
-                                (unsigned)current->tm_mon + 1,
-                                (unsigned)current->tm_mday);
+    int today = days_from_civil(current->tm_year + 1900,(unsigned)current->tm_mon + 1,(unsigned)current->tm_mday);
     return today - days_from_civil(year, (unsigned)month, (unsigned)day);
 }
 
@@ -175,9 +160,7 @@ int heap_getmin_active(MinHeap *heap, Donors *result){
 
     int minimum_index = -1;
     for (int i = 0; i < heap->size; i++) {
-        if (donation_days_ago(&heap->data[i]) >= 90 &&
-            (minimum_index < 0 ||
-             heap->data[i].distance < heap->data[minimum_index].distance))
+        if (donation_days_ago(&heap->data[i]) >= 90 && (minimum_index < 0 || heap->data[i].distance < heap->data[minimum_index].distance))
             minimum_index = i;
     }
 

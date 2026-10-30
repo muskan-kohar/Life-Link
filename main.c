@@ -146,8 +146,7 @@ void list_compatible_donors(Graph *graph)
         return;
     }
 
-    printf("\nNearest active donor for %s:\n",
-           bloodGroupName(patient_group));
+    printf("\nNearest active donor for %s:\n",bloodGroupName(patient_group));
     printf("Compatible blood group: %s\n", bloodGroupName(nearest_group));
     print_donor(nearest_donor);
 }
