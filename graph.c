@@ -1,7 +1,11 @@
-#include <stdio.h>
-#include <graph.h>
+#include <string.h>
+#include "graph.h"
 
 void initialise_Graph(Graph *g){
+    if (g == NULL)
+        return;
+
+    /* Rows are patient groups; columns mark compatible donor groups. */
     int matrix[8][8] = {
        //O- O+ A- A+ B- B+ AB-AB+
         {1, 0, 0, 0, 0, 0, 0, 0}, //O-
@@ -14,6 +18,7 @@ void initialise_Graph(Graph *g){
         {1, 1, 1, 1, 1, 1, 1, 1}  //AB+
     };
 
+    /* Copy the compatibility table into the graph. */
     for(int i = 0; i < 8; i++){
         for(int j = 0; j < 8; j++){
             g->mat[i][j] = matrix[i][j];
@@ -21,16 +26,29 @@ void initialise_Graph(Graph *g){
     }
 }
 
-void get_Compatible_Groups(Graph* g, BloodGroup patient, BloodGroup compatible[], int   *count){
+/* Fill compatible[] with donor groups accepted by the patient's group. */
+void get_Compatible_Groups(const Graph *g, BloodGroup patient,
+                           BloodGroup compatible[], int *count){
+    if (count == NULL)
+        return;
+
     *count = 0;
-    for(int i = 0; i <8; i++){
-        if(g->mat[patient][i] == 1){
+    /* Reject invalid inputs before using the blood group as a matrix index. */
+    if (g == NULL || compatible == NULL || patient < O_NEG || patient > AB_POS)
+        return;
+
+    for (int i = 0; i < 8; i++){
+        if (g->mat[patient][i] == 1) {
             compatible[*count] = i;
             (*count)++;
         }
     }
 }
-BloodGroup convert_To_enum(char input[]){
+
+/* Convert a blood-group label to its enum value, or -1 if unrecognized. */
+BloodGroup convert_To_enum(const char *input){
+    if (input == NULL)
+        return (BloodGroup)-1;
     if(strcmp(input, "O-") == 0){
         return O_NEG;
     }
@@ -58,7 +76,9 @@ BloodGroup convert_To_enum(char input[]){
 
     return -1;
 }
-char* bloodGroupName(BloodGroup group){
+
+/* Return the printable label for a blood-group enum value. */
+const char *bloodGroupName(BloodGroup group){
     switch(group){
         case O_NEG:
             return "O-";
@@ -87,17 +107,3 @@ char* bloodGroupName(BloodGroup group){
 
     return "Invalid";
 }
-// int main(){
-//     Graph g;
-
-//     initialise_Graph(&g);
-
-//     printf("Enter the blood groups you want to find the compatible groups for: \n");
-//     printf("0 -> O-\n1 -> O+\n2 -> A-\n3 -> A+\n4 -> B-\n5 -> B+\n6 -> AB-\n7 -> AB+\n");
-//     BloodGroup patient;
-//     scanf("%d", patient);
-//     BloodGroup compatible[8];
-//     int count;
-//     get_Compatible_Groups(&g, patient, compatible, &count);
-
-// }

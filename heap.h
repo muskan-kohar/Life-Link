@@ -3,48 +3,26 @@
 
 #include "donor.h"
 
+/* Dynamic array representing a min-heap ordered by donor distance. */
 typedef struct {
     Donors *data;     
     int size;        
     int capacity; 
 } MinHeap;
 
-/*
-  Sets the heap to empty (data = NULL, size = 0, capacity = 0).
-  Allocates nothing, so it cannot fail.
-*/
-
+/* Set the heap to an empty, unallocated state. */
 void heap_init(MinHeap *heap);
 
-/*
-  Frees the array (if any) and resets the heap to empty.
-  Safe to call on a heap that never received a donor.
-*/
-
+/* Free the backing array and reset the heap. */
 void heap_free(MinHeap *heap);
 
-/*
-  Adds a donor. Allocates the array on the first insert and grows it when full.
-  Returns 0 on success, -1 if allocation fails.
-*/
-
+/* Insert a donor; return 0 on success or -1 on invalid state/allocation failure. */
 int heap_insert(MinHeap *heap, Donors d);
 
-/*
-   Removes and returns the donor with the smallest distance.
-   The caller must make sure the heap is not empty (heap->size > 0).
-*/
-
+/* Extract the nearest donor, or return a zero-initialized donor if empty. */
 Donors heap_extract_min(MinHeap *heap);
 
-/*
-   Finds the nearest ACTIVE donor.
-   Returns  1 and copies that donor into *result if one is found,
-            0 if the heap has no active donor,
-           -1 if a temporary allocation fails.
-   In every case the heap holds the same donors afterwards: everything popped during the search is reinserted.
-*/
-
+/* Find the nearest eligible donor; return 1 if found, otherwise 0. */
 int heap_getmin_active(MinHeap *heap, Donors *result);
 
 #endif

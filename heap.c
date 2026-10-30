@@ -1,177 +1,182 @@
-#include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
-#include <string.h>
+#include <limits.h>
+#include <stdint.h>
 #include <time.h>
 #include "heap.h"
 
-// Initializing a heap
-
+/* Reset the heap without allocating memory. */
 void heap_init(MinHeap *heap){
+    if (heap == NULL)
+        return;
+
     heap->data = NULL;
     heap->size = 0;
     heap->capacity = 0;
 }
 
-// Free the heap
-
+/* Release the backing array and leave the heap in its initialized state. */
 void heap_free(MinHeap *heap){
+    if (heap == NULL)
+        return;
+
     free(heap->data);
     heap_init(heap);
 }
 
-/*
-    Sift Up Operation
-        If any child value is less than the parent value, this operation ensures that it is above the parent for all nodes such that min-heap property maintains throughout the heap
+/* Restore heap order after inserting a value at the end of the array. */
+static void sift_up(MinHeap *heap, int index){
+    while (index > 0) {
+        int parent = (index - 1) / 2;
+        if (heap->data[parent].distance <= heap->data[index].distance)
+            break;
 
-*/
-
-MinHeap* siftup(MinHeap* heap){
-    if(heap->size == 1)
-        return heap;
-    for(int i=1;i<heap->size;i++){
-        while((heap->data[(i-1)/2]).distance > (heap->data[i].distance)){
-            Donors temp = heap->data[(i-1)/2];
-            heap->data[(i-1)/2] = heap->data[i];
-            heap->data[i] = temp;
-            i = (i-1)/2;
-        }
+        Donors temp = heap->data[parent];
+        heap->data[parent] = heap->data[index];
+        heap->data[index] = temp;
+        index = parent;
     }
-    return heap;
 }
 
-// Inserting a donor in the heap. Returns 0 on success, -1 if allocation fails.
-
+/* Append a donor, growing storage if needed, then restore min-heap order. */
 int heap_insert(MinHeap *heap, Donors d){
-    
-    if(heap->capacity==0)
-        heap->capacity = 1;
-    
-    if(heap->size == heap->capacity){
-        heap->capacity*=2;
-        
-        Donors* temp = realloc(heap->data,heap->capacity * sizeof(Donors));
-
-        if(temp == NULL)
-            return -1;
-    
-        heap->data = temp;
-    }
-    
-    heap->data[heap->size] = d;
-    heap->size++;
-    heap = siftup(heap);
-    return 0;
-}
-
-/*
-    Heapify
-        When we remove a node from the heap, we place the last value(in array form) in the root place.
-        Then we perform this operation(heapify) to ensure every node is in correct position i.e if parent is greater than its child it will be replaced by the smallest of its children.
-        We can say this works exactly opposite of sift up operation.
-
-*/
-
-MinHeap* heapify(MinHeap* heap){
-    for(int i=0;i<heap->size && (2*i+2 <= (heap->size)-1);i++){
-        while((heap->data[2*i + 1]).distance < (heap->data[i].distance) || (heap->data[2*i + 2]).distance < (heap->data[i].distance) ){
-            if((heap->data[2*i + 1]).distance < ((heap->data[2*i+2]).distance)){
-                Donors temp = heap->data[2*i + 1];
-                heap->data[2*i + 1] = heap->data[i];
-                heap->data[i] = temp;
-                i = 2*i + 1;
-            }
-
-            else{
-                Donors temp = heap->data[2*i + 2];
-                heap->data[2*i + 2]= heap->data[i];
-                heap->data[i] = temp;
-                i = 2*i + 2;
-            }
-        }
-    }
-    return heap;
-}
-
-// Here we extract the donor which is at the top of the heap and heapify the remaining heap. 
-
-Donors heap_extract_min(MinHeap *heap){
-    if(heap == NULL || heap->size == 0){
-        Donors empty = {0};
-        return empty;
-    }
-
-    Donors d = heap->data[0];
-    heap->data[0] = heap->data[(heap->size)-1];
-    heap->size--;
-    heap = heapify(heap);
-    return d;
-}
-
-// This function is used to find the no of days from last donation time of a donor.
-
-int no_of_days(Donors d){
-    int day = 0;
-    int month =0;
-    int year = 0;
-    char date[11];
-    strcpy(date,d.last_donation_date);
-    day = (date[0]-'0')*10 + date[1]-'0';
-    month = (date[3]-'0')*10 + date[4]-'0';
-    year = (date[7]-'0')*1000 + (date[8]-'0')*100 + (date[9]-'0')*10 + date[10]-'0'; 
-
-    struct tm donationDate = {0};
-    donationDate.tm_year = year - 1900;   // tm_year is years since 1900
-    donationDate.tm_mon  = month - 1;     // tm_mon is 0-11
-    donationDate.tm_mday = day;
-
-    time_t donationTime = mktime(&donationDate);
-    time_t now = time(NULL);
-
-    double seconds = difftime(now, donationTime);
-    int days = (int)(seconds / (60 * 60 * 24));
-
-    return days;
-}
-
-/*
-    Here we find the minimum active donor by checking if the no of days since last donation date is atleast 90. 
-    Returns  1 and copies that donor into *result if one is found,
-            0 if the heap has no active donor,
-           -1 if a temporary allocation fails.
-   In every case the heap holds the same donors afterwards: everything popped during the search is reinserted.
-*/
-
-int heap_getmin_active(MinHeap *heap, Donors *result){
-   if (heap == NULL || result == NULL || heap->size == 0)
-        return 0;
-
-    int count = 0;
-    Donors *temp = malloc(heap->size * sizeof(Donors));
-
-    if (temp == NULL)
+    if (heap == NULL || heap->size < 0 || heap->capacity < 0)
+        return -1;
+    if (heap->size > heap->capacity)
         return -1;
 
-    while (heap->size > 0) {
-        Donors d = heap_extract_min(heap);
-        temp[count++] = d;
+    if (heap->size == heap->capacity) {
+        if (heap->capacity > INT_MAX / 2)
+            return -1;
 
-        if (no_of_days(d) >= 90) {
-            *result = d;
+        int new_capacity = heap->capacity == 0 ? 1 : heap->capacity * 2;
+        if ((size_t)new_capacity > SIZE_MAX / sizeof(*heap->data))
+            return -1;
+        Donors *temp = realloc(heap->data, (size_t)new_capacity * sizeof(*temp));
+        if (temp == NULL)
+            return -1;
 
-            for (int i = 0; i < count; i++) {
-                heap_insert(heap, temp[i]);
-            }
-
-            free(temp);
-            return 1;
-        }
+        heap->data = temp;
+        heap->capacity = new_capacity;
     }
 
-    for (int i = 0; i < count; i++) {
-        heap_insert(heap, temp[i]);
-    }
-
-    free(temp);
+    heap->data[heap->size] = d;
+    heap->size++;
+    sift_up(heap, heap->size - 1);
     return 0;
+}
+
+/* Restore min-heap order after the root has been replaced by the last item. */
+static void sift_down(MinHeap *heap, int index){
+    for (;;) {
+        if (index >= heap->size / 2)
+            break;
+
+        int left = 2 * index + 1;
+        int right = left + 1;
+        int smallest = index;
+
+        if (left < heap->size &&
+            heap->data[left].distance < heap->data[smallest].distance)
+            smallest = left;
+        if (right < heap->size &&
+            heap->data[right].distance < heap->data[smallest].distance)
+            smallest = right;
+        if (smallest == index)
+            break;
+
+        Donors temp = heap->data[index];
+        heap->data[index] = heap->data[smallest];
+        heap->data[smallest] = temp;
+        index = smallest;
+    }
+}
+
+/* Remove and return the donor with the smallest distance. */
+Donors heap_extract_min(MinHeap *heap){
+    Donors empty = {0};
+    if (heap == NULL || heap->size <= 0 || heap->data == NULL)
+        return empty;
+
+    Donors minimum = heap->data[0];
+    heap->size--;
+    if (heap->size > 0) {
+        heap->data[0] = heap->data[heap->size];
+        sift_down(heap, 0);
+    }
+    return minimum;
+}
+
+/* Convert a Gregorian calendar date to a day number for date-only differences. */
+static int days_from_civil(int year, unsigned month, unsigned day){
+    year -= month <= 2;
+    int era = (year >= 0 ? year : year - 399) / 400;
+    unsigned year_of_era = (unsigned)(year - era * 400);
+    unsigned adjusted_month = month > 2 ? month - 3 : month + 9;
+    unsigned day_of_year = (153 * adjusted_month + 2) / 5 + day - 1;
+    unsigned day_of_era = year_of_era * 365 + year_of_era / 4 -
+                          year_of_era / 100 + day_of_year;
+    return era * 146097 + (int)day_of_era;
+}
+
+/* Return elapsed calendar days, INT_MAX for an unset date, or -1 if invalid. */
+static int donation_days_ago(const Donors *donor){
+    const char *date = donor->last_donation_date;
+    if (date[0] == '0' && date[1] == '0' && date[2] == '-' &&
+        date[3] == '0' && date[4] == '0' && date[5] == '-' &&
+        date[6] == '0' && date[7] == '0' && date[8] == '0' &&
+        date[9] == '0' && date[10] == '\0')
+        return INT_MAX;
+
+    if (date[2] != '-' || date[5] != '-' || date[10] != '\0')
+        return -1;
+
+    for (int i = 0; i < 10; i++) {
+        if (i != 2 && i != 5 && (date[i] < '0' || date[i] > '9'))
+            return -1;
+    }
+
+    int day = (date[0] - '0') * 10 + date[1] - '0';
+    int month = (date[3] - '0') * 10 + date[4] - '0';
+    int year = (date[6] - '0') * 1000 + (date[7] - '0') * 100 +
+               (date[8] - '0') * 10 + date[9] - '0';
+    if (year < 1 || month < 1 || month > 12)
+        return -1;
+
+    static const int days_in_month[] = {31, 28, 31, 30, 31, 30,
+                                         31, 31, 30, 31, 30, 31};
+    int month_length = days_in_month[month - 1];
+    if (month == 2 && (year % 400 == 0 || (year % 4 == 0 && year % 100 != 0)))
+        month_length++;
+    if (day < 1 || day > month_length)
+        return -1;
+
+    time_t now = time(NULL);
+    struct tm *current = localtime(&now);
+    if (current == NULL)
+        return -1;
+
+    int today = days_from_civil(current->tm_year + 1900,
+                                (unsigned)current->tm_mon + 1,
+                                (unsigned)current->tm_mday);
+    return today - days_from_civil(year, (unsigned)month, (unsigned)day);
+}
+
+/* Find the closest donor eligible to donate without changing the heap. */
+int heap_getmin_active(MinHeap *heap, Donors *result){
+    if (heap == NULL || result == NULL || heap->size <= 0 || heap->data == NULL)
+        return 0;
+
+    int minimum_index = -1;
+    for (int i = 0; i < heap->size; i++) {
+        if (donation_days_ago(&heap->data[i]) >= 90 &&
+            (minimum_index < 0 ||
+             heap->data[i].distance < heap->data[minimum_index].distance))
+            minimum_index = i;
+    }
+
+    if (minimum_index < 0)
+        return 0;
+
+    *result = heap->data[minimum_index];
+    return 1;
 }

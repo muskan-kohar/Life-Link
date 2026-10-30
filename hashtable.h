@@ -1,21 +1,12 @@
 #ifndef HASHTABLE_H
 #define HASHTABLE_H
 
-#include"donor.h"
+#include "donor.h"
+#include "graph.h"
 
 #define TABLE_SIZE 100
 
-
-/*
-    we craete a array of tables so we can access by index
-    like table[i]
-
-    but one multiple donors can be at the same index so here we need linked list
-
-*/
-
-//creating the linked list structure
-
+/* Each bucket contains a linked list of donor records. */
 typedef struct Node{
     Donors donor;
     struct Node* next;
@@ -23,12 +14,15 @@ typedef struct Node{
 
 extern Node *hash_table[TABLE_SIZE];
 
-//declaring functions
-Node* create(Donors* donor);
-unsigned long hash_fun(char *key);
-void initialize_hash();
+/* Create a heap-allocated list node containing a copy of donor. */
+Node *create(Donors *donor);
+/* Free all bucket lists and initialize the table to empty. */
+void initialize_hash(void);
+/* Read, validate, and add one donor to its blood-group bucket. */
 void insert_donor(Donors *donor);
-void display();
-Node* search_donor(Node* hash_table, BloodGroup key);
+/* Display donors stored in the table. */
+void display(void);
+/* Return the first donor in a blood-group list, or NULL for an invalid group. */
+Node *search_donor(BloodGroup key);
 
 #endif

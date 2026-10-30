@@ -1,122 +1,126 @@
-//Creating a hashtable to store database
-
 #include <stdio.h>
 #include <string.h>
-#include <stdbool.h>
 #include <stdlib.h>
-#include "graph.h"
+#include <errno.h>
+#include <limits.h>
 #include "hashtable.h"
 
-
-
-//creating the array
 Node *hash_table[TABLE_SIZE];
 
-//function to create a node
-Node* create(Donors *donor){
-    Node* newnode = malloc(sizeof(Node));
+/* Allocate a list node and copy the donor record into it. */
+Node *create(Donors *donor){
+    if (donor == NULL)
+        return NULL;
+
+    Node *newnode = malloc(sizeof(*newnode));
+    if (newnode == NULL)
+        return NULL;
+
     newnode->donor = *donor;
     newnode->next = NULL;
-
     return newnode;
 }
 
-//intializing the hastables to NULL
-void initialize_hash(){
-    int i;
-    for(i=0;i<TABLE_SIZE;++i){
+/* Free all donor chains and clear every hash-table bucket. */
+void initialize_hash(void){
+    for (int i = 0; i < TABLE_SIZE; i++) {
+        Node *current = hash_table[i];
+        while (current != NULL) {
+            Node *next = current->next;
+            free(current);
+            current = next;
+        }
         hash_table[i] = NULL;
     }
-    return;
 }
 
+/* Read donor fields, validate them, then prepend the donor to its group list. */
 void insert_donor(Donors *donor){
-    printf("Enter the name of donor:\n");
-    scanf("%s", donor->name);
-    printf("Enter the blood group of donor:\n");
-    scanf("%s", donor->blood_group);
-    printf("Enter the location of the person:\n");
-    scanf("%s", donor->location);
-    printf("Enter the distance of the person from the center:\n");
-    scanf("%d", &donor->distance);
-    printf("Enter the contact number of the donor:\n");
-    scanf("%s", donor->contact);
-    strcpy(donor->last_donation_date, "00-00-0000");
-
-    //now generate hash based on blood group
-    BloodGroup key = convert_To_enum(donor->blood_group);
-    if(key == -1){
-        printf("Invalid blood group\n");
+    if (donor == NULL) {
+        fprintf(stderr, "Cannot insert a null donor.\n");
         return;
     }
 
-    if(hash_table[key] == NULL){
-        //creating a newnode 
-        Node* newnode = create(donor);
-        hash_table[key] = newnode;
+    printf("Enter the name of donor:\n");
+    if (scanf("%49s", donor->name) != 1) {
+        fprintf(stderr, "Unable to read donor name.\n");
+        return;
     }
-    else{
-        //creating a newnode 
-        Node* newnode = create(donor);
-        newnode->next = hash_table[key];
-        hash_table[key] = newnode;
+    printf("Enter the blood group of donor:\n");
+    if (scanf("%4s", donor->blood_group) != 1) {
+        fprintf(stderr, "Unable to read donor blood group.\n");
+        return;
+    }
+    printf("Enter the location of the person:\n");
+    if (scanf("%49s", donor->location) != 1) {
+        fprintf(stderr, "Unable to read donor location.\n");
+        return;
+    }
+    printf("Enter the distance of the person from the center:\n");
+    char distance_input[32];
+    if (scanf("%31s", distance_input) != 1) {
+        fprintf(stderr, "Unable to read distance; it must be a non-negative integer.\n");
+        return;
+    }
+    char *end;
+    errno = 0;
+    long distance = strtol(distance_input, &end, 10);
+    if (errno == ERANGE || end == distance_input || *end != '\0' ||
+        distance < 0 || distance > INT_MAX) {
+        fprintf(stderr, "Distance must be a non-negative integer.\n");
+        return;
+    }
+    donor->distance = (int)distance;
+    printf("Enter the contact number of the donor:\n");
+    if (scanf("%14s", donor->contact) != 1) {
+        fprintf(stderr, "Unable to read donor contact number.\n");
+        return;
     }
 
+    BloodGroup key = convert_To_enum(donor->blood_group);
+    if (key < O_NEG || key > AB_POS) {
+        fprintf(stderr, "Invalid blood group.\n");
+        return;
+    }
+
+    /* New donors have no donation date on record yet. */
+    strcpy(donor->last_donation_date, "00-00-0000");
+    Node *newnode = create(donor);
+    if (newnode == NULL) {
+        fprintf(stderr, "Unable to allocate memory for donor.\n");
+        return;
+    }
+
+    newnode->next = hash_table[key];
+    hash_table[key] = newnode;
 }
 
-//function to display the hash table
-void display(){
+/* Print the donor records in each non-empty blood-group bucket. */
+void display(void){
+    for (int i = 0; i < TABLE_SIZE; i++) {
+        if (hash_table[i] == NULL)
+            continue;
 
-    int i;
-    for(i=0;i<TABLE_SIZE;i++){
-
-        if(hash_table[i] != NULL){
-            printf("%d : ", i+1);
-        
-
-            Node* temp = hash_table[i];
-
-            while(temp != NULL){
-                printf("%s | %s | %s | %s | %s | %d -> ",
-                temp->donor.name,
-                temp->donor.blood_group,
-                temp->donor.location,
-                temp->donor.last_donation_date,
-                temp->donor.contact,
-                temp->donor.distance);
-
-                temp = temp->next;
-            }   
-
-            printf("\nNULL\n");
-
+        printf("%d : ", i + 1);
+        Node *temp = hash_table[i];
+        while (temp != NULL) {
+            printf("%s | %s | %s | %s | %s | %d -> ",
+                   temp->donor.name,
+                   temp->donor.blood_group,
+                   temp->donor.location,
+                   temp->donor.last_donation_date,
+                   temp->donor.contact,
+                   temp->donor.distance);
+            temp = temp->next;
         }
+        printf("\nNULL\n");
     }
-
 }
 
+/* Return the linked-list head for a valid blood group, or NULL if invalid. */
+Node *search_donor(BloodGroup key){
+    if (key < O_NEG || key > AB_POS)
+        return NULL;
 
-//search donor by their blood group
-Node* search_donor(Node* hash_table, BloodGroup key){
-    //initially making it a 0 sized 
-    int length = 0;
-    Node* the_bloodgroup = malloc(length*sizeof(Node));
-
-    //we now go to the index key and take all the dnors one by one and fill in the array 
-    //untill we reaches null
-
-    Node* curr = hash_table[key];
-    int i = 0;
-
-    while(curr != NULL){
-        
-        //so we have one more donor so we resize the array by using realloc
-        Node* the_bloodgroup = realloc(the_bloodgroup, (length + 1)*sizeof(Node));
-        the_bloodgroup[i] = curr;
-        i++;
-        curr = curr->next;
-    }
-
-    return the_bloodgroup;
-
+    return hash_table[key];
 }
