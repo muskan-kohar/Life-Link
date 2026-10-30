@@ -4,6 +4,15 @@
 #include <time.h>
 #include "heap.h"
 
+static int heap_is_valid(const MinHeap *heap){
+    return heap != NULL &&
+           heap->size >= 0 &&
+           heap->capacity >= 0 &&
+           heap->size <= heap->capacity &&
+           ((heap->capacity == 0 && heap->data == NULL) ||
+            (heap->capacity > 0 && heap->data != NULL));
+}
+
 /* Reset the heap without allocating memory. */
 void heap_init(MinHeap *heap){
     if (heap == NULL)
@@ -39,9 +48,7 @@ static void sift_up(MinHeap *heap, int index){
 
 /* Append a donor, growing storage if needed, then restore min-heap order. */
 int heap_insert(MinHeap *heap, Donors d){
-    if (heap == NULL || heap->size < 0 || heap->capacity < 0)
-        return -1;
-    if (heap->size > heap->capacity)
+    if (!heap_is_valid(heap))
         return -1;
 
     if (heap->size == heap->capacity) {
@@ -94,7 +101,7 @@ static void sift_down(MinHeap *heap, int index){
 /* Remove and return the donor with the smallest distance. */
 Donors heap_extract_min(MinHeap *heap){
     Donors empty = {0};
-    if (heap == NULL || heap->size <= 0 || heap->data == NULL)
+    if (!heap_is_valid(heap) || heap->size == 0)
         return empty;
 
     Donors minimum = heap->data[0];
@@ -163,7 +170,7 @@ static int donation_days_ago(const Donors *donor){
 
 /* Find the closest donor eligible to donate without changing the heap. */
 int heap_getmin_active(MinHeap *heap, Donors *result){
-    if (heap == NULL || result == NULL || heap->size <= 0 || heap->data == NULL)
+    if (!heap_is_valid(heap) || result == NULL || heap->size == 0)
         return 0;
 
     int minimum_index = -1;

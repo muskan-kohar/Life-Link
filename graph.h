@@ -8,6 +8,7 @@ typedef struct {
 
 /* Enum order matches the compatibility-matrix row and column indexes. */
 typedef enum{
+    INVALID_BLOOD_GROUP = -1,
     O_NEG,
     O_POS,
     A_NEG,
@@ -20,9 +21,9 @@ typedef enum{
 
 /* Initialize the red-cell compatibility matrix. */
 void initialise_Graph(Graph* g);
-void get_Compatible_Groups(Graph* g, BloodGroup patient, BloodGroup compatible[], int *count);
-BloodGroup convert_To_enum(char input[]);
-char* bloodGroupName(BloodGroup group);
+void get_Compatible_Groups(const Graph* g, BloodGroup patient, BloodGroup compatible[], int *count);
+BloodGroup convert_To_enum(const char *input);
+const char* bloodGroupName(BloodGroup group);
 
 
 #endif

@@ -48,7 +48,7 @@ void get_Compatible_Groups(const Graph *g, BloodGroup patient, BloodGroup compat
 /* Convert a blood-group label to its enum value, or -1 if unrecognized. */
 BloodGroup convert_To_enum(const char *input){
     if (input == NULL)
-        return (BloodGroup)-1;
+        return INVALID_BLOOD_GROUP;
     if(strcmp(input, "O-") == 0){
         return O_NEG;
     }
@@ -74,12 +74,15 @@ BloodGroup convert_To_enum(const char *input){
         return AB_POS;
     }
 
-    return -1;
+    return INVALID_BLOOD_GROUP;
 }
 
 /* Return the printable label for a blood-group enum value. */
 const char *bloodGroupName(BloodGroup group){
     switch(group){
+        case INVALID_BLOOD_GROUP:
+            return "Invalid";
+
         case O_NEG:
             return "O-";
 

@@ -4,7 +4,7 @@
 #include "donor.h"
 #include "graph.h"
 
-#define TABLE_SIZE 100
+#define TABLE_SIZE 8
 
 /* Each bucket contains a linked list of donor records. */
 typedef struct Node{

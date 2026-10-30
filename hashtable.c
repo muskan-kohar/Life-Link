@@ -3,9 +3,51 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <limits.h>
+#include <time.h>
 #include "hashtable.h"
 
 Node *hash_table[TABLE_SIZE];
+
+static int valid_donation_date(const char *date){
+    if (date == NULL)
+        return 0;
+    if (strcmp(date, "00-00-0000") == 0)
+        return 1;
+    if (strlen(date) != 10 || date[2] != '-' || date[5] != '-')
+        return 0;
+
+    for (int i = 0; i < 10; i++) {
+        if (i != 2 && i != 5 && (date[i] < '0' || date[i] > '9'))
+            return 0;
+    }
+
+    int day = (date[0] - '0') * 10 + date[1] - '0';
+    int month = (date[3] - '0') * 10 + date[4] - '0';
+    int year = (date[6] - '0') * 1000 + (date[7] - '0') * 100 +
+               (date[8] - '0') * 10 + date[9] - '0';
+    if (year < 1 || month < 1 || month > 12)
+        return 0;
+
+    static const int days_in_month[] = {31, 28, 31, 30, 31, 30,
+                                         31, 31, 30, 31, 30, 31};
+    int month_length = days_in_month[month - 1];
+    if (month == 2 && (year % 400 == 0 || (year % 4 == 0 && year % 100 != 0)))
+        month_length++;
+    if (day < 1 || day > month_length)
+        return 0;
+
+    time_t now = time(NULL);
+    struct tm *current = localtime(&now);
+    if (current == NULL)
+        return 0;
+
+    int current_year = current->tm_year + 1900;
+    int current_month = current->tm_mon + 1;
+    return year < current_year ||
+           (year == current_year && month < current_month) ||
+           (year == current_year && month == current_month &&
+            day <= current->tm_mday);
+}
 
 /* Allocate a list node and copy the donor record into it. */
 Node *create(Donors *donor){
@@ -41,26 +83,6 @@ void insert_donor(Donors *donor){
         return;
     }
     printf("Enter the name of donor:\n");
-    scanf("%49s", donor->name);
-    printf("Enter the blood group of donor:\n");
-    scanf("%4s", donor->blood_group);
-    printf("Enter the location of the person:\n");
-    scanf("%49s", donor->location);
-    printf("Enter the distance of the person from the center:\n");
-    scanf("%d", &donor->distance);
-    printf("Enter the contact number of the donor:\n");
-    scanf("%14s", donor->contact);
-    printf("Enter the last donation date in 'DD-MM-YYYY' format:\n");
-    scanf("%14s", donor->last_donation_date);
-
-    //now generate hash based on blood group
-    BloodGroup key = convert_To_enum(donor->blood_group);
-    if((int)key == -1){
-        printf("Invalid blood group\n");
-        return;
-    }
-
-    printf("Enter the name of donor:\n");
     if (scanf("%49s", donor->name) != 1) {
         fprintf(stderr, "Unable to read donor name.\n");
         return;
@@ -95,15 +117,24 @@ void insert_donor(Donors *donor){
         fprintf(stderr, "Unable to read donor contact number.\n");
         return;
     }
+    printf("Enter last donation date (DD-MM-YYYY, or 00-00-0000 if never donated):\n");
+    char date_input[32];
+    if (scanf("%31s", date_input) != 1) {
+        fprintf(stderr, "Unable to read last donation date.\n");
+        return;
+    }
+    if (!valid_donation_date(date_input)) {
+        fprintf(stderr, "Enter a valid donation date that is not in the future.\n");
+        return;
+    }
 
     BloodGroup key = convert_To_enum(donor->blood_group);
-    if (key < O_NEG || key > AB_POS) {
+    if (key == INVALID_BLOOD_GROUP) {
         fprintf(stderr, "Invalid blood group.\n");
         return;
     }
 
-    /* New donors have no donation date on record yet. */
-    strcpy(donor->last_donation_date, "00-00-0000");
+    strcpy(donor->last_donation_date, date_input);
     Node *newnode = create(donor);
     if (newnode == NULL) {
         fprintf(stderr, "Unable to allocate memory for donor.\n");
@@ -120,7 +151,7 @@ void display(void){
         if (hash_table[i] == NULL)
             continue;
 
-        printf("%d : ", i + 1);
+        printf("%s : ", bloodGroupName((BloodGroup)i));
         Node *temp = hash_table[i];
         while (temp != NULL) {
             printf("%s | %s | %s | %s | %s | %d -> ",
