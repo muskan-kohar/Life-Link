@@ -28,8 +28,7 @@ void initialise_Graph(Graph *g){
 }
 
 /* Fill compatible[] with donor groups accepted by the patient's group. */
-void get_Compatible_Groups(const Graph *g, BloodGroup patient,
-                           BloodGroup compatible[], int *count){
+void get_Compatible_Groups(const Graph *g, BloodGroup patient, BloodGroup compatible[], int *count){
     if (count == NULL)
         return;
 

@@ -23,6 +23,6 @@ void insert_donor(Donors *donor);
 /* Display donors stored in the table. */
 void display(void);
 /* Return the first donor in a blood-group list, or NULL for an invalid group. */
-Node *search_donor(BloodGroup key);
+Node* search_donor(Node** table, BloodGroup key);
 
 #endif

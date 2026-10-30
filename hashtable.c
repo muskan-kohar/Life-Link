@@ -36,8 +36,10 @@ void initialize_hash(void){
 
 /* Read donor fields, validate them, then prepend the donor to its group list. */
 void insert_donor(Donors *donor){
-    if (donor == NULL) {
+    if (donor == NULL){
         fprintf(stderr, "Cannot insert a null donor.\n");
+        return;
+    }
     printf("Enter the name of donor:\n");
     scanf("%49s", donor->name);
     printf("Enter the blood group of donor:\n");
