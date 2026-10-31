@@ -4,6 +4,9 @@
 #include <time.h>
 #include "heap.h"
 
+/* Blood-group enum values are also the indexes into this donor index. */
+static MinHeap donor_heaps[8];
+
 static int heap_is_valid(const MinHeap *heap){
     return heap != NULL && heap->size >= 0 && heap->capacity >= 0 && heap->size <= heap->capacity && ((heap->capacity == 0 && heap->data == NULL) || (heap->capacity > 0 && heap->data != NULL));
 }
@@ -120,6 +123,7 @@ static int days_from_civil(int year, unsigned month, unsigned day){
 /* Return elapsed calendar days, INT_MAX for an unset date, or -1 if invalid. */
 static int donation_days_ago(const Donors *donor){
     const char *date = donor->last_donation_date;
+    /* Treat the registration sentinel for "never donated" as always eligible. */
     if (date[0] == '0' && date[1] == '0' && date[2] == '-' && date[3] == '0' && date[4] == '0' && date[5] == '-' && date[6] == '0' && date[7] == '0' && date[8] == '0' && date[9] == '0' && date[10] == '\0')
         return INT_MAX;
 
@@ -153,20 +157,113 @@ static int donation_days_ago(const Donors *donor){
     return today - days_from_civil(year, (unsigned)month, (unsigned)day);
 }
 
-/* Find the closest donor eligible to donate without changing the heap. */
-int heap_getmin_active(MinHeap *heap, Donors *result){
-    if (!heap_is_valid(heap) || result == NULL || heap->size == 0)
+/* Release and reset every persistent blood-group heap. */
+void heap_reset_donor_index(void){
+    for (int i = 0; i < 8; i++)
+        heap_free(&donor_heaps[i]);
+}
+
+int heap_add_donor(BloodGroup group, Donors donor){
+    if (group < O_NEG || group > AB_POS)
+        return -1;
+
+    return heap_insert(&donor_heaps[group], donor);
+}
+
+int heap_remove_donor(BloodGroup group, int donor_id){
+    if (group < O_NEG || group > AB_POS || donor_id <= 0)
+        return -1;
+
+    MinHeap *heap = &donor_heaps[group];
+    if (!heap_is_valid(heap))
+        return -1;
+
+    int index = 0;
+    while (index < heap->size && heap->data[index].donor_id != donor_id)
+        index++;
+    if (index == heap->size)
         return 0;
 
-    int minimum_index = -1;
+    heap->size--;
+    if (index < heap->size) {
+        /* Restore heap order in only the direction the replacement violates. */
+        heap->data[index] = heap->data[heap->size];
+        if (index > 0 &&
+            heap->data[index].distance <
+                heap->data[(index - 1) / 2].distance)
+            sift_up(heap, index);
+        else
+            sift_down(heap, index);
+    }
+    return 1;
+}
+
+int heap_update_donor(Donors donor){
+    BloodGroup group = convert_To_enum(donor.blood_group);
+    if (group == INVALID_BLOOD_GROUP)
+        return -1;
+
+    MinHeap *heap = &donor_heaps[group];
+    if (!heap_is_valid(heap))
+        return -1;
+
     for (int i = 0; i < heap->size; i++) {
-        if (donation_days_ago(&heap->data[i]) >= 90 && (minimum_index < 0 || heap->data[i].distance < heap->data[minimum_index].distance))
-            minimum_index = i;
+        if (heap->data[i].donor_id == donor.donor_id) {
+            heap->data[i] = donor;
+            /* A donation-date update leaves distance unchanged, but reheapify safely. */
+            if (i > 0 &&
+                heap->data[i].distance < heap->data[(i - 1) / 2].distance)
+                sift_up(heap, i);
+            else
+                sift_down(heap, i);
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/* Use heap distance bounds to prune branches that cannot beat the current match. */
+static void find_nearest_active(const MinHeap *heap, int index, int *best_index){
+    if (index >= heap->size)
+        return;
+    if (*best_index >= 0 &&
+        heap->data[index].distance >= heap->data[*best_index].distance)
+        return;
+
+    if (donation_days_ago(&heap->data[index]) >= 90) {
+        *best_index = index;
+        return;
     }
 
-    if (minimum_index < 0)
+    /* Heap children cannot be closer than this ineligible donor. */
+    find_nearest_active(heap, 2 * index + 1, best_index);
+    find_nearest_active(heap, 2 * index + 2, best_index);
+}
+
+/* Search persistent blood-group heaps for the nearest medically eligible donor. */
+int heap_getmin_active(const BloodGroup compatible[], int count,
+                       Donors *result, BloodGroup *donor_group){
+    if (compatible == NULL || count < 0 || result == NULL || donor_group == NULL)
         return 0;
 
-    *result = heap->data[minimum_index];
-    return 1;
+    int found = 0;
+    for (int i = 0; i < count; i++) {
+        BloodGroup group = compatible[i];
+        if (group < O_NEG || group > AB_POS)
+            continue;
+
+        MinHeap *heap = &donor_heaps[group];
+        if (!heap_is_valid(heap))
+            return -1;
+
+        int best_index = -1;
+        find_nearest_active(heap, 0, &best_index);
+        if (best_index >= 0 &&
+            (!found || heap->data[best_index].distance < result->distance)) {
+            *result = heap->data[best_index];
+            *donor_group = group;
+            found = 1;
+        }
+    }
+    return found;
 }

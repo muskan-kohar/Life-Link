@@ -5,6 +5,7 @@
 #include <limits.h>
 #include <time.h>
 #include "hashtable.h"
+#include "heap.h"
 
 Node *hash_table[TABLE_SIZE];
 
@@ -117,6 +118,7 @@ void initialize_hash(void){
         }
         hash_table[i] = NULL;
     }
+    heap_reset_donor_index();
 }
 
 /* Read donor fields, validate them, then prepend the donor to its group list. */
@@ -193,10 +195,56 @@ void insert_donor(Donors *donor){
         return;
     }
 
+    if (heap_add_donor(key, *donor) != 0) {
+        free(newnode);
+        fprintf(stderr, "Unable to index donor by distance.\n");
+        return;
+    }
+
     next_donor_id++;
     newnode->next = hash_table[key];
     hash_table[key] = newnode;
     printf("Donor registered successfully. Donor ID: %d\n", donor->donor_id);
+}
+
+/* Record a donation and keep the donor list and distance index synchronized. */
+int update_donation_date(int donor_id, Donors *updated_donor){
+    if (donor_id <= 0 || updated_donor == NULL)
+        return -1;
+
+    time_t now = time(NULL);
+    struct tm *current = localtime(&now);
+    if (current == NULL)
+        return -1;
+
+    Node *match = NULL;
+    for (int i = 0; i < TABLE_SIZE && match == NULL; i++) {
+        for (Node *node = hash_table[i]; node != NULL; node = node->next) {
+            if (node->donor.donor_id == donor_id) {
+                match = node;
+                break;
+            }
+        }
+    }
+    if (match == NULL)
+        return 0;
+
+    Donors updated = match->donor;
+    int date_length = snprintf(updated.last_donation_date,
+                               sizeof(updated.last_donation_date),
+                               "%02d-%02d-%04d", current->tm_mday,
+                               current->tm_mon + 1, current->tm_year + 1900);
+    if (date_length < 0 ||
+        date_length >= (int)sizeof(updated.last_donation_date))
+        return -1;
+
+    /* Update the indexed copy before publishing the new record in the list. */
+    if (heap_update_donor(updated) != 1)
+        return -1;
+
+    match->donor = updated;
+    *updated_donor = updated;
+    return 1;
 }
 
 /* Print the donor records in each non-empty blood-group bucket. */

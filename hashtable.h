@@ -20,6 +20,8 @@ Node *create(Donors *donor);
 void initialize_hash(void);
 /* Read, validate, and add one donor to its blood-group bucket. */
 void insert_donor(Donors *donor);
+/* Update a registered donor's last donation date to today and sync its heap. */
+int update_donation_date(int donor_id, Donors *updated_donor);
 /* Display donors stored in the table. */
 void display(void);
 /* Return the first donor in a blood-group list, or NULL for an invalid group. */
