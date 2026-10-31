@@ -4,6 +4,7 @@
 #include <string.h>
 #include <errno.h>
 #include <limits.h>
+#include <ctype.h>
 
 #include "graph.h"
 #include "hashtable.h"
@@ -27,6 +28,96 @@ int read_blood_group(BloodGroup *group)
     }
 
     return 1;
+}
+
+void print_donor(Donors donor);
+
+// Read a complete line of text, including spaces.
+static int read_text_line(const char *prompt, char *buffer, size_t size)
+{
+    printf("%s", prompt);
+    if (fgets(buffer, (int)size, stdin) == NULL)
+        return 0;
+
+    size_t length = strlen(buffer);
+    if (length > 0 && buffer[length - 1] == '\n')
+    {
+        buffer[--length] = '\0';
+    }
+    else
+    {
+        int character = getchar();
+        if (character != '\n' && character != EOF)
+        {
+            while ((character = getchar()) != '\n' && character != EOF)
+            {
+            }
+            return 0;
+        }
+    }
+
+    if (length > 0 && buffer[length - 1] == '\r')
+        buffer[--length] = '\0';
+
+    return buffer[0] != '\0';
+}
+
+// Compare names without treating uppercase and lowercase as different.
+static int names_match(const char *first, const char *second)
+{
+    while (*first != '\0' && *second != '\0')
+    {
+        if (tolower((unsigned char)*first) != tolower((unsigned char)*second))
+            return 0;
+        first++;
+        second++;
+    }
+
+    return *first == '\0' && *second == '\0';
+}
+
+// Check whether a donor is registered using name, blood group and contact.
+void check_donor()
+{
+    char name[50];
+    char contact[15];
+    BloodGroup group;
+
+    if (!read_text_line("Enter donor name: ", name, sizeof(name)))
+    {
+        printf("Invalid name.\n");
+        return;
+    }
+
+    if (!read_blood_group(&group))
+        return;
+
+    // Clear the newline left by read_blood_group() before reading the contact.
+    int character;
+    while ((character = getchar()) != '\n' && character != EOF)
+    {
+    }
+
+    if (!read_text_line("Enter donor contact number: ", contact, sizeof(contact)))
+    {
+        printf("Invalid contact number.\n");
+        return;
+    }
+
+    Node *temp = search_donor(hash_table, group);
+    while (temp != NULL)
+    {
+        if (names_match(temp->donor.name, name) &&
+            strcmp(temp->donor.contact, contact) == 0)
+        {
+            printf("\nDonor found in the system!\n");
+            print_donor(temp->donor);
+            return;
+        }
+        temp = temp->next;
+    }
+
+    printf("\nNo matching donor found in the system.\n");
 }
 
 // Print the details of a donor
@@ -228,6 +319,7 @@ int main()
         printf("3. Remove a donor\n");
         printf("4. Display all donors\n");
         printf("5. Find compatible donors\n");
+        printf("6. Check if a donor is registered\n");
         printf("0. Exit\n");
 
         printf("Enter your choice: ");
@@ -281,6 +373,10 @@ int main()
 
             case 5:
                 list_compatible_donors(&graph);
+                break;
+
+            case 6:
+                check_donor();
                 break;
 
             case 0:
