@@ -8,6 +8,49 @@
 
 Node *hash_table[TABLE_SIZE];
 
+/* Assigns a different ID to each donor registered during this run. */
+static unsigned long long next_donor_id = 1001;
+
+/* Read one complete line, including spaces, and reject overlong or empty input. */
+static int read_line(const char *prompt, char *buffer, size_t size){
+    if (buffer == NULL || size < 2 || size > INT_MAX)
+        return 0;
+
+    printf("%s", prompt);
+    if (fgets(buffer, (int)size, stdin) == NULL)
+        return 0;
+
+    size_t length = strlen(buffer);
+    if (length > 0 && buffer[length - 1] == '\n') {
+        buffer[--length] = '\0';
+    } else {
+        int ch = getchar();
+        if (ch != '\n' && ch != EOF) {
+            while ((ch = getchar()) != '\n' && ch != EOF) {
+            }
+            return 0;
+        }
+    }
+
+    if (length > 0 && buffer[length - 1] == '\r')
+        buffer[--length] = '\0';
+
+    return buffer[0] != '\0';
+}
+
+/* Accept exactly 10 decimal digits for an Indian mobile contact number. */
+static int valid_contact(const char *contact){
+    if (contact == NULL || strlen(contact) != 10)
+        return 0;
+
+    for (int i = 0; i < 10; i++) {
+        if (contact[i] < '0' || contact[i] > '9')
+            return 0;
+    }
+
+    return 1;
+}
+
 static int valid_donation_date(const char *date){
     if (date == NULL)
         return 0;
@@ -82,24 +125,22 @@ void insert_donor(Donors *donor){
         fprintf(stderr, "Cannot insert a null donor.\n");
         return;
     }
-    printf("Enter the name of donor:\n");
-    if (scanf("%49s", donor->name) != 1) {
-        fprintf(stderr, "Unable to read donor name.\n");
+
+    if (!read_line("Enter the name of donor: ", donor->name, sizeof(donor->name))) {
+        fprintf(stderr, "Unable to read a valid donor name.\n");
         return;
     }
-    printf("Enter the blood group of donor:\n");
-    if (scanf("%4s", donor->blood_group) != 1) {
+    if (!read_line("Enter the blood group of donor: ", donor->blood_group, sizeof(donor->blood_group))) {
         fprintf(stderr, "Unable to read donor blood group.\n");
         return;
     }
-    printf("Enter the location of the person:\n");
-    if (scanf("%49s", donor->location) != 1) {
-        fprintf(stderr, "Unable to read donor location.\n");
+    if (!read_line("Enter the location of the person: ", donor->location, sizeof(donor->location))) {
+        fprintf(stderr, "Unable to read a valid donor location.\n");
         return;
     }
-    printf("Enter the distance of the person from the center:\n");
+
     char distance_input[32];
-    if (scanf("%31s", distance_input) != 1) {
+    if (!read_line("Enter the distance of the person from the center: ", distance_input, sizeof(distance_input))) {
         fprintf(stderr, "Unable to read distance; it must be a non-negative integer.\n");
         return;
     }
@@ -112,14 +153,18 @@ void insert_donor(Donors *donor){
         return;
     }
     donor->distance = (int)distance;
-    printf("Enter the contact number of the donor:\n");
-    if (scanf("%14s", donor->contact) != 1) {
+
+    if (!read_line("Enter the contact number of the donor: ", donor->contact, sizeof(donor->contact))) {
         fprintf(stderr, "Unable to read donor contact number.\n");
         return;
     }
-    printf("Enter last donation date (DD-MM-YYYY, or 00-00-0000 if never donated):\n");
+    if (!valid_contact(donor->contact)) {
+        fprintf(stderr, "Contact number must contain exactly 10 digits.\n");
+        return;
+    }
+
     char date_input[32];
-    if (scanf("%31s", date_input) != 1) {
+    if (!read_line("Enter last donation date (DD-MM-YYYY, or 00-00-0000 if never donated): ", date_input, sizeof(date_input))) {
         fprintf(stderr, "Unable to read last donation date.\n");
         return;
     }
@@ -135,14 +180,23 @@ void insert_donor(Donors *donor){
     }
 
     strcpy(donor->last_donation_date, date_input);
+
+    if (next_donor_id > (unsigned long long)INT_MAX) {
+        fprintf(stderr, "Unable to generate another donor ID.\n");
+        return;
+    }
+    donor->donor_id = (int)next_donor_id;
+
     Node *newnode = create(donor);
     if (newnode == NULL) {
         fprintf(stderr, "Unable to allocate memory for donor.\n");
         return;
     }
 
+    next_donor_id++;
     newnode->next = hash_table[key];
     hash_table[key] = newnode;
+    printf("Donor registered successfully. Donor ID: %d\n", donor->donor_id);
 }
 
 /* Print the donor records in each non-empty blood-group bucket. */
@@ -154,7 +208,8 @@ void display(void){
         printf("%s : ", bloodGroupName((BloodGroup)i));
         Node *temp = hash_table[i];
         while (temp != NULL) {
-            printf("%s | %s | %s | %s | %s | %d -> ",
+            printf("ID: %d | %s | %s | %s | %s | %s | %d -> ",
+                   temp->donor.donor_id,
                    temp->donor.name,
                    temp->donor.blood_group,
                    temp->donor.location,

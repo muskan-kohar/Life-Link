@@ -3,6 +3,7 @@
 
 /* Donor record shared by the heap and blood-group hash table. */
 typedef struct {
+    int donor_id;
     char name[50];
     char blood_group[5];
     char location[50];

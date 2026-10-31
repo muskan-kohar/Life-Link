@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+#include <limits.h>
 
 #include "graph.h"
 #include "hashtable.h"
@@ -30,7 +32,8 @@ int read_blood_group(BloodGroup *group)
 // Print the details of a donor
 void print_donor(Donors donor)
 {
-    printf("\nName: %s\n", donor.name);
+    printf("\nDonor ID: %d\n", donor.donor_id);
+    printf("Name: %s\n", donor.name);
     printf("Blood Group: %s\n", donor.blood_group);
     printf("Location: %s\n", donor.location);
     printf("Distance: %d\n", donor.distance);
@@ -56,24 +59,64 @@ void list_donors(BloodGroup group)
     }
 }
 
-// Remove a donor using their name and blood group
+// Remove a donor using their unique ID and blood group.
 void remove_donor()
 {
     BloodGroup group;
-    char name[50];
+    int id;
 
     if (!read_blood_group(&group))
         return;
 
-    printf("Enter donor name: ");
-    if (scanf("%49s", name) != 1)
+    // Clear the newline left by read_blood_group() before reading the ID line.
+    int character;
+    while ((character = getchar()) != '\n' && character != EOF)
+    {
+    }
+
+    char id_input[32];
+    printf("Enter donor ID: ");
+    if (fgets(id_input, sizeof(id_input), stdin) == NULL)
+    {
+        printf("Unable to read donor ID.\n");
         return;
+    }
+
+    size_t length = strlen(id_input);
+    if (length > 0 && id_input[length - 1] == '\n')
+    {
+        id_input[--length] = '\0';
+    }
+    else
+    {
+        character = getchar();
+        if (character != '\n' && character != EOF)
+        {
+            while ((character = getchar()) != '\n' && character != EOF)
+            {
+            }
+            printf("Donor ID is too long.\n");
+            return;
+        }
+    }
+
+    char *end;
+    errno = 0;
+    long parsed_id = strtol(id_input, &end, 10);
+    if (errno == ERANGE || end == id_input || *end != '\0' ||
+        parsed_id <= 0 || parsed_id > INT_MAX)
+    {
+        printf("Enter a valid positive donor ID.\n");
+        return;
+    }
+    id = (int)parsed_id;
 
     Node **temp = &hash_table[group];
 
+    // Traverse the selected blood-group list and match the unique donor ID.
     while (*temp != NULL)
     {
-        if (strcmp((*temp)->donor.name, name) == 0)
+        if ((*temp)->donor.donor_id == id)
         {
             Node *del = *temp;
             *temp = (*temp)->next;
@@ -201,6 +244,12 @@ int main()
             }
             printf("Invalid choice. Try again.\n");
             continue;
+        }
+
+        // Remove the newline left by scanf before any function uses fgets.
+        int character;
+        while ((character = getchar()) != '\n' && character != EOF)
+        {
         }
 
         switch (choice)
